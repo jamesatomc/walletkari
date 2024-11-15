@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "network.kanari.wallet_kari"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "network.kanari.wallet_kari"
@@ -49,6 +49,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -57,5 +59,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.bitcoinj.core)
-    implementation(libs.accompanist.autocomplete)
 }
