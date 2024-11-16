@@ -59,4 +59,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.bitcoinj.core)
+    implementation("com.google.guava:guava:30.1.1-android")
+
 }

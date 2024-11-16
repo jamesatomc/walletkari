@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import network.kanari.wallet_kari.components.ImportWallet
 import network.kanari.wallet_kari.ui.theme.WalletkariTheme
 
 class MainActivity : ComponentActivity() {
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 Scaffold(modifier = Modifier.fillMaxSize()) {
                     AppNavHost(navController = navController, context = this@MainActivity)
+//                    ImportWallet()
                 }
             }
         }
