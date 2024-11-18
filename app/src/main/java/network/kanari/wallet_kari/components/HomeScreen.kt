@@ -62,6 +62,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -205,14 +206,61 @@ fun HomeScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        var showSeedPhrase by remember { mutableStateOf(false) }
+        var showPasswordDialog by remember { mutableStateOf(false) }
+        var inputPassword by remember { mutableStateOf("") }
+        var passwordError by remember { mutableStateOf(false) }
+
         Text("Seed Phrase", style = MaterialTheme.typography.bodySmall)
         ClickableText(
-            text = AnnotatedString(mnemonic),
+            text = AnnotatedString(if (showSeedPhrase) mnemonic else "Click to view"),
             style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
             onClick = {
-                clipboardManager.setText(AnnotatedString(mnemonic))
+                showPasswordDialog = true
             }
         )
+
+        if (showPasswordDialog) {
+            AlertDialog(
+                onDismissRequest = { showPasswordDialog = false },
+                title = { Text("Enter Password") },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = inputPassword,
+                            onValueChange = { inputPassword = it },
+                            label = { Text("Password") },
+                            isError = passwordError,
+                            visualTransformation = PasswordVisualTransformation()
+                        )
+                        if (passwordError) {
+                            Text(
+                                text = "Incorrect password",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (inputPassword == password) {
+                            showSeedPhrase = true
+                            showPasswordDialog = false
+                        } else {
+                            passwordError = true
+                        }
+                    }) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPasswordDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
