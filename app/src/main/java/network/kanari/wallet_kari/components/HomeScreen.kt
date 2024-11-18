@@ -1,5 +1,6 @@
 package network.kanari.wallet_kari.components
 
+
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.foundation.layout.Arrangement
@@ -24,11 +25,22 @@ import org.bitcoinj.script.Script
 import org.bitcoinj.core.Address
 import org.bitcoinj.wallet.DeterministicKeyChain
 import org.bitcoinj.wallet.DeterministicSeed
-
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.Scanner
+import org.json.JSONObject
 
 import android.util.Log
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import org.bitcoinj.core.Coin
@@ -40,6 +52,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
+
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -73,6 +90,11 @@ fun HomeScreen(navController: NavHostController) {
         "Error generating address"
     }
 
+    // Fetch balances for each address
+    val nativeSegwitBalance = fetchBalance(nativeSegwitAddress)
+    val nativeSegwitP2SHBalance = fetchBalance(nativeSegwitP2SHAddress)
+    val legacyBalance = fetchBalance(legacyAddress)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -80,13 +102,64 @@ fun HomeScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val clipboardManager: ClipboardManager = LocalClipboardManager.current
+
         Text("Generated Bitcoin Addresses", style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Native Segwit (P2WPKH): $nativeSegwitAddress")
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Native Segwit (P2SH-P2WPKH): $nativeSegwitP2SHAddress")
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Legacy (P2PKH): $legacyAddress")
+
+        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            val clipboardManager: ClipboardManager = LocalClipboardManager.current
+
+            Card(
+                modifier = Modifier.padding(8.dp),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Native Segway (P2WPKH)", style = MaterialTheme.typography.bodyMedium)
+                    ClickableText(
+                        text = AnnotatedString("Address: $nativeSegwitAddress"),
+                        style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(nativeSegwitAddress))
+                        }
+                    )
+                    Text("Balance: $nativeSegwitBalance BTC", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Card(
+                modifier = Modifier.padding(8.dp),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Native Segwit (P2SH-P2WPKH)", style = MaterialTheme.typography.bodyMedium)
+                    ClickableText(
+                        text = AnnotatedString("Address: $nativeSegwitP2SHAddress"),
+                        style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(nativeSegwitP2SHAddress))
+                        }
+                    )
+                    Text("Balance: $nativeSegwitP2SHBalance BTC", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Card(
+                modifier = Modifier.padding(8.dp),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Legacy (P2PKH)", style = MaterialTheme.typography.bodyMedium)
+                    ClickableText(
+                        text = AnnotatedString("Address: $legacyAddress"),
+                        style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(legacyAddress))
+                        }
+                    )
+                    Text("Balance: $legacyBalance BTC", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Text("Send Bitcoin", style = MaterialTheme.typography.bodySmall)
@@ -120,7 +193,47 @@ fun HomeScreen(navController: NavHostController) {
             Text("Send Transaction")
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Transaction Result: $transactionResult")
+        Text("Transaction Result: $transactionResult", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text("Seed Phrase", style = MaterialTheme.typography.bodySmall)
+        ClickableText(
+            text = AnnotatedString(mnemonic),
+            style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
+            onClick = {
+                clipboardManager.setText(AnnotatedString(mnemonic))
+            }
+        )
+    }
+}
+
+fun fetchBalance(address: String): String {
+    val apiUrl = "https://api.blockcypher.com/v1/btc/main/addrs/$address/balance"
+    return try {
+        val url = URL(apiUrl)
+        val connection = url.openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        connection.connect()
+
+        val responseCode = connection.responseCode
+        if (responseCode != 200) {
+            throw RuntimeException("HttpResponseCode: $responseCode")
+        } else {
+            val scanner = Scanner(url.openStream())
+            val response = StringBuilder()
+            while (scanner.hasNext()) {
+                response.append(scanner.nextLine())
+            }
+            scanner.close()
+
+            val jsonResponse = JSONObject(response.toString())
+            val balance = jsonResponse.getLong("balance")
+            (balance / 1e8).toString() // Convert satoshis to BTC
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        "Error fetching balance"
     }
 }
 

@@ -97,6 +97,12 @@ fun CreateWallet(navController: NavController) {
                 ) {
                     Text("Create Wallet")
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = {
+                    navController.navigate("import_wallet")
+                }) {
+                    Text(text = "import_wallet")
+                }
             }
         }
         if (showMnemonic) {

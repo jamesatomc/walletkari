@@ -1,6 +1,7 @@
 package network.kanari.wallet_kari.components
 
 import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -25,7 +27,10 @@ import androidx.compose.ui.unit.dp
 
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import network.kanari.wallet_kari.ui.theme.WalletkariTheme
 
 @Composable
 fun ImportWallet(navController: NavController) {
@@ -100,5 +105,23 @@ fun ImportWallet(navController: NavController) {
         }) {
             Text(text = "Import Wallet")
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = {
+                navController.navigate("create_wallet")
+        }) {
+            Text(text = "Create Wallet")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES,showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    WalletkariTheme{
+        ImportWallet(
+            navController = rememberNavController(),
+        )
     }
 }

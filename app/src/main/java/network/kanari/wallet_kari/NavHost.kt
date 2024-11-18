@@ -6,19 +6,28 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import network.kanari.wallet_kari.components.CreateWallet
 import network.kanari.wallet_kari.components.HomeScreen
+import network.kanari.wallet_kari.components.ImportWallet
 
 
 @Composable
 fun AppNavHost(navController: NavHostController, context: Context) {
+    val sharedPreferences = context.getSharedPreferences("wallet_prefs", Context.MODE_PRIVATE)
+    val mnemonic = sharedPreferences.getString("mnemonic", "")
+
+    val startDestination = if (mnemonic.isNullOrEmpty()) "create_wallet" else "home_screen"
+
     NavHost(
         navController = navController,
-        startDestination = "create_wallet"
+        startDestination = startDestination
     ) {
         composable("create_wallet") {
             CreateWallet(navController)
         }
         composable("home_screen") {
             HomeScreen(navController)
+        }
+        composable("import_wallet") {
+            ImportWallet(navController)
         }
     }
 }
