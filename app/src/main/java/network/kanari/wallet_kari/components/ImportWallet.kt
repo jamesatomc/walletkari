@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -26,18 +27,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import network.kanari.wallet_kari.ui.theme.WalletkariTheme
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+
 @Composable
 fun ImportWallet(navController: NavController) {
-    var wordCount by remember { mutableStateOf(12) }
+    var wordCount by remember { mutableIntStateOf(12) }
     var seedPhrase by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var inputPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf(false) }
+    var passwordMismatchError by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("wallet_prefs", Context.MODE_PRIVATE)
 
     Column(
         modifier = Modifier
@@ -80,7 +92,8 @@ fun ImportWallet(navController: NavController) {
             value = seedPhrase,
             onValueChange = { seedPhrase = it },
             label = { Text("Seed Phrase") },
-            isError = showError
+            isError = showError,
+            modifier = Modifier.fillMaxWidth()
         )
         if (showError) {
             Text(
@@ -92,25 +105,83 @@ fun ImportWallet(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = {
-            val words = seedPhrase.trim().split("\\s+".toRegex())
-            showError = words.size != wordCount
-            if (!showError) {
-                val sharedPreferences = context.getSharedPreferences("wallet_prefs", Context.MODE_PRIVATE)
-                with(sharedPreferences.edit()) {
-                    putString("mnemonic", seedPhrase)
-                    apply()
-                }
-                navController.navigate("home_screen")
-            }
+            showPasswordDialog = true
         }) {
             Text(text = "Import Wallet")
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = {
-                navController.navigate("create_wallet")
+            navController.navigate("create_wallet")
         }) {
             Text(text = "Create Wallet")
         }
+    }
+
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false },
+            title = { Text("Set Password") },
+            text = {
+                Column {
+                    TextField(
+                        value = inputPassword,
+                        onValueChange = {
+                            inputPassword = it
+                            passwordMismatchError = false
+                        },
+                        label = { Text("Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        isError = passwordError,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = confirmPassword,
+                        onValueChange = {
+                            confirmPassword = it
+                            passwordMismatchError = false
+                        },
+                        label = { Text("Confirm Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        isError = passwordMismatchError,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (passwordMismatchError) {
+                        Text(
+                            text = "Passwords do not match",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (inputPassword.isNotEmpty() && inputPassword == confirmPassword) {
+                        val words = seedPhrase.trim().split("\\s+".toRegex())
+                        showError = words.size != wordCount
+                        if (!showError) {
+                            with(sharedPreferences.edit()) {
+                                putString("mnemonic", seedPhrase)
+                                putString("password", inputPassword)
+                                apply()
+                            }
+                            navController.navigate("home_screen")
+                        }
+                        showPasswordDialog = false
+                    } else {
+                        passwordMismatchError = true
+                    }
+                }) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPasswordDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

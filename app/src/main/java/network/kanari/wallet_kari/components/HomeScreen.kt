@@ -58,6 +58,11 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+
 @Composable
 fun HomeScreen(navController: NavHostController) {
     val context = LocalContext.current
@@ -69,6 +74,9 @@ fun HomeScreen(navController: NavHostController) {
     var amount by remember { mutableStateOf("") }
     var fee by remember { mutableStateOf("") }
     var transactionResult by remember { mutableStateOf("") }
+    var showDialog by remember { mutableStateOf(false) }
+    var inputPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf(false) }
 
     // Generate BTC addresses from the mnemonic
     val nativeSegwitAddress = try {
@@ -205,9 +213,62 @@ fun HomeScreen(navController: NavHostController) {
                 clipboardManager.setText(AnnotatedString(mnemonic))
             }
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = {
+            showDialog = true
+        }) {
+            Text("Logout")
+        }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Enter Password") },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = inputPassword,
+                            onValueChange = { inputPassword = it },
+                            label = { Text("Password") },
+                            isError = passwordError
+                        )
+                        if (passwordError) {
+                            Text(
+                                text = "Incorrect password",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (inputPassword == password) {
+                            with(sharedPreferences.edit()) {
+                                clear()
+                                apply()
+                            }
+                            navController.navigate("import_wallet") {
+                                popUpTo("home_screen") { inclusive = true }
+                            }
+                        } else {
+                            passwordError = true
+                        }
+                    }) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 }
-
 fun fetchBalance(address: String): String {
     val apiUrl = "https://api.blockcypher.com/v1/btc/main/addrs/$address/balance"
     return try {
