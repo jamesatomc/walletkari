@@ -64,6 +64,7 @@ import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import network.kanari.wallet_kari.components.widget.AppDrawer
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.LegacyAddress
 import org.bitcoinj.core.SegwitAddress
@@ -89,8 +90,6 @@ fun HomeScreen(navController: NavHostController) {
     val sharedPreferences: SharedPreferences = context.getSharedPreferences("wallet_prefs", Context.MODE_PRIVATE)
     val mnemonic = sharedPreferences.getString("mnemonic", "") ?: ""
     val password = sharedPreferences.getString("password", "") ?: ""
-    var showSeedPhrase by remember { mutableStateOf(false) }
-    var showPasswordDialog by remember { mutableStateOf(false) }
     var inputPassword by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf(false) }
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
@@ -142,41 +141,14 @@ fun HomeScreen(navController: NavHostController) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                Column(
-                    modifier = Modifier
-                        .width(320.dp)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    NavigationDrawerItem(
-                        label = { Text(text = "Wallet") },
-                        selected = false,
-                        onClick = { navController.navigate("home_screen") }
-                    )
-                    NavigationDrawerItem(
-                        label = { Text(text = "ICO") },
-                        selected = false,
-                        onClick = { navController.navigate("ico") }
-                    )
-                    NavigationDrawerItem(
-                        label = { Text(text = "Settings") },
-                        selected = false,
-                        onClick = { navController.navigate("settings") }
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Button(
-                        onClick = { showDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp)
-                    ) {
-                        Text("Logout")
-                    }
+            AppDrawer(
+                navController = navController,
+                showDialog = showDialog, // Pass the showDialog state if needed
+                onLogoutClick = {
+                    // Handle logout logic here, e.g., show a dialog, clear user data, etc.
+                    showDialog = true
                 }
-            }
+            )
         },
     ) {
         Scaffold(
@@ -308,59 +280,6 @@ fun HomeScreen(navController: NavHostController) {
                 Spacer(modifier = Modifier.height(16.dp))
 
 
-
-                Text("Seed Phrase", style = MaterialTheme.typography.bodySmall)
-                ClickableText(
-                    text = AnnotatedString(if (showSeedPhrase) mnemonic else "Click to view"),
-                    style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
-                    onClick = {
-                        showPasswordDialog = true
-                    }
-                )
-
-                if (showPasswordDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showPasswordDialog = false },
-                        title = { Text("Enter Password") },
-                        text = {
-                            Column {
-                                OutlinedTextField(
-                                    value = inputPassword,
-                                    onValueChange = { inputPassword = it },
-                                    label = { Text("Password") },
-                                    isError = passwordError,
-                                    visualTransformation = PasswordVisualTransformation()
-                                )
-                                if (passwordError) {
-                                    Text(
-                                        text = "Incorrect password",
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                if (inputPassword == password) {
-                                    showSeedPhrase = true
-                                    showPasswordDialog = false
-                                } else {
-                                    passwordError = true
-                                }
-                            }) {
-                                Text("Confirm")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showPasswordDialog = false }) {
-                                Text("Cancel")
-                            }
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 if (showDialog) {
                     AlertDialog(
