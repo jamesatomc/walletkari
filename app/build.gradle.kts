@@ -40,7 +40,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -59,6 +58,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.bitcoinj.core)
-    implementation("com.google.guava:guava:31.0.1-android")
+    implementation(libs.guava)
+    implementation("androidx.biometric:biometric:1.4.0-alpha02")
+
 
 }
