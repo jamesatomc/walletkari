@@ -1,4 +1,4 @@
-package network.kanari.wallet_kari.components
+package network.kanari.wallet_kari.components.setting
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview

@@ -6,10 +6,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 
 import network.kanari.wallet_kari.components.CreateWallet
-import network.kanari.wallet_kari.components.HomeScreen
-import network.kanari.wallet_kari.components.IcoScreen
+import network.kanari.wallet_kari.components.home.HomeScreen
+import network.kanari.wallet_kari.components.ico.IcoScreen
 import network.kanari.wallet_kari.components.ImportWallet
-import network.kanari.wallet_kari.components.SettingScreen
+import network.kanari.wallet_kari.components.setting.SettingScreen
 
 
 @Composable

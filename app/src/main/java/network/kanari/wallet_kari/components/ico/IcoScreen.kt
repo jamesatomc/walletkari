@@ -1,4 +1,4 @@
-package network.kanari.wallet_kari.components
+package network.kanari.wallet_kari.components.ico
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
