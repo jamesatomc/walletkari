@@ -16,13 +16,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
@@ -32,13 +29,10 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -54,7 +48,6 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -89,9 +82,6 @@ fun HomeScreen(navController: NavHostController) {
     val context = LocalContext.current
     val sharedPreferences: SharedPreferences = context.getSharedPreferences("wallet_prefs", Context.MODE_PRIVATE)
     val mnemonic = sharedPreferences.getString("mnemonic", "") ?: ""
-    val password = sharedPreferences.getString("password", "") ?: ""
-    var inputPassword by remember { mutableStateOf("") }
-    var passwordError by remember { mutableStateOf(false) }
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
     var recipientAddress by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
@@ -143,9 +133,7 @@ fun HomeScreen(navController: NavHostController) {
         drawerContent = {
             AppDrawer(
                 navController = navController,
-                showDialog = showDialog, // Pass the showDialog state if needed
                 onLogoutClick = {
-                    // Handle logout logic here, e.g., show a dialog, clear user data, etc.
                     showDialog = true
                 }
             )
@@ -278,54 +266,6 @@ fun HomeScreen(navController: NavHostController) {
                     transactionResult = transactionResult
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-
-
-
-                if (showDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showDialog = false },
-                        title = { Text("Enter Password") },
-                        text = {
-                            Column {
-                                OutlinedTextField(
-                                    value = inputPassword,
-                                    onValueChange = { inputPassword = it },
-                                    label = { Text("Password") },
-                                    isError = passwordError
-                                )
-                                if (passwordError) {
-                                    Text(
-                                        text = "Incorrect password",
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                if (inputPassword == password) {
-                                    with(sharedPreferences.edit()) {
-                                        clear()
-                                        apply()
-                                    }
-                                    navController.navigate("import_wallet") {
-                                        popUpTo("home_screen") { inclusive = true }
-                                    }
-                                } else {
-                                    passwordError = true
-                                }
-                            }) {
-                                Text("Confirm")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDialog = false }) {
-                                Text("Cancel")
-                            }
-                        }
-                    )
-                }
             }
         }
     }   // Drawer content
