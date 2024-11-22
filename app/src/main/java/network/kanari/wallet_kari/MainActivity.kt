@@ -8,6 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,15 +56,13 @@ class MainActivity : FragmentActivity() {
                 }
             })
 
-        promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Biometric Login")
-            .setSubtitle("Authenticate using your biometric credential")
-            .setDescription("Place your finger on the sensor to authenticate")
-            .setNegativeButtonText("Cancel")
-            .build()
+            promptInfo = BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Authenticate")
+                .setDeviceCredentialAllowed(true) // Allow password as an alternative
+                .build()
 
         setContent {
-            WalletkariTheme {
+
                 val navController = rememberNavController()
                 if (isAuthenticated) {
                     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -73,29 +73,33 @@ class MainActivity : FragmentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.DarkGray)
-                            .padding(16.dp),
+                            .background(Color(0xFFFFA500)) // Orange color
+                            .padding(20.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
+                            modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.Bottom
                         ) {
-                            CircularProgressIndicator(
-                                color = Color.White,
-                                strokeWidth = 8.dp,
-                                modifier = Modifier.size(64.dp)
+                            Icon(
+                                imageVector = Icons.Default.Lock, // Use a suitable icon
+                                contentDescription = "Lock Icon",
+                                modifier = Modifier.size(48.dp) // Adjust the size as needed
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { biometricPrompt.authenticate(promptInfo) }) {
-                                Text(text = "Authenticate")
+                            Spacer(modifier = Modifier.height(320.dp))
+                            Button(
+                                onClick = { biometricPrompt.authenticate(promptInfo) },
+                                Modifier.fillMaxWidth()
+                            ) {
+                                Text(text = "Unlock Wallet")
                             }
                         }
                     }
                 }
             }
         }
-    }
+
 
     override fun onResume() {
         super.onResume()

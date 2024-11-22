@@ -57,9 +57,16 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Bitcoin
     implementation(libs.bitcoinj.core)
     implementation(libs.guava)
-    implementation("androidx.biometric:biometric:1.4.0-alpha02")
 
+    // Biometric
+    implementation(libs.androidx.biometric)
+
+    // Material design icons
+    implementation(libs.androidx.material.icons.core)
+    implementation(libs.androidx.material.icons.extended)
 
 }
