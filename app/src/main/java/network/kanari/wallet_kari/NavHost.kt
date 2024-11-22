@@ -4,9 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+
 import network.kanari.wallet_kari.components.CreateWallet
 import network.kanari.wallet_kari.components.HomeScreen
+import network.kanari.wallet_kari.components.IcoScreen
 import network.kanari.wallet_kari.components.ImportWallet
+import network.kanari.wallet_kari.components.SettingScreen
 
 
 @Composable
@@ -29,5 +32,13 @@ fun AppNavHost(navController: NavHostController, context: Context) {
         composable("import_wallet") {
             ImportWallet(navController)
         }
+        composable("settings") {
+            SettingScreen(navController)
+        }
+        composable("ico") {
+            IcoScreen(navController)
+        }
     }
 }
+
+

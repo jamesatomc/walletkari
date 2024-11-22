@@ -18,13 +18,12 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             WalletkariTheme {
                 val navController = rememberNavController()
                 Scaffold(modifier = Modifier.fillMaxSize()) {
                     AppNavHost(navController = navController, context = this@MainActivity)
-//                    ImportWallet()
+
                 }
             }
         }
