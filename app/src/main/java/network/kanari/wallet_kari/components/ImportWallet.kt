@@ -2,7 +2,10 @@ package network.kanari.wallet_kari.components
 
 import android.content.Context
 import android.content.res.Configuration
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -35,9 +39,19 @@ import androidx.navigation.compose.rememberNavController
 import network.kanari.wallet_kari.ui.theme.WalletkariTheme
 
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExposedDropdownMenuDefaults.textFieldColors
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import network.kanari.wallet_kari.components.widget.CustomTextField
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportWallet(navController: NavController) {
     var wordCount by remember { mutableIntStateOf(12) }
@@ -50,6 +64,8 @@ fun ImportWallet(navController: NavController) {
     var passwordMismatchError by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val sharedPreferences = context.getSharedPreferences("wallet_prefs", Context.MODE_PRIVATE)
+    var passwordVisible_1 by remember { mutableStateOf(false) }
+    var passwordVisible_2 by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -58,62 +74,84 @@ fun ImportWallet(navController: NavController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Import Wallet", style = MaterialTheme.typography.titleLarge)
-        Spacer(modifier = Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseOnSurface,),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "Import Wallet", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(16.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(
-                selected = wordCount == 12,
-                onClick = { wordCount = 12 },
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = MaterialTheme.colorScheme.primary,
-                    unselectedColor = MaterialTheme.colorScheme.onSurface,
-                    disabledSelectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                    disabledUnselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = wordCount == 12,
+                        onClick = { wordCount = 12 },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = MaterialTheme.colorScheme.primary,
+                            unselectedColor = MaterialTheme.colorScheme.onSurface,
+                            disabledSelectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                            disabledUnselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                    )
+                    Text(text = "12 words")
+                    Spacer(modifier = Modifier.width(16.dp))
+                    RadioButton(
+                        selected = wordCount == 24,
+                        onClick = { wordCount = 24 },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = MaterialTheme.colorScheme.primary,
+                            unselectedColor = MaterialTheme.colorScheme.onSurface,
+                            disabledSelectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                            disabledUnselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                    )
+                    Text(text = "24 words")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                CustomTextField(
+                    value = seedPhrase,
+                    onValueChange = { seedPhrase = it },
+                    label = "Seed Phrase",
+                    placeholder = "Enter your seed phrase",
+                    isPassword = false,
+                    passwordVisible = false,
+                    onPasswordVisibilityChange = null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 4.dp,
+                    visualTransformation = PasswordVisualTransformation(),
+                    isError = showError,
                 )
-            )
-            Text(text = "12 words")
-            Spacer(modifier = Modifier.width(16.dp))
-            RadioButton(
-                selected = wordCount == 24,
-                onClick = { wordCount = 24 },
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = MaterialTheme.colorScheme.primary,
-                    unselectedColor = MaterialTheme.colorScheme.onSurface,
-                    disabledSelectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                    disabledUnselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                )
-            )
-            Text(text = "24 words")
-        }
+                if (showError) {
+                    Text(
+                        text = "Invalid seed phrase",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        TextField(
-            value = seedPhrase,
-            onValueChange = { seedPhrase = it },
-            label = { Text("Seed Phrase") },
-            isError = showError,
-            modifier = Modifier.fillMaxWidth()
-        )
-        if (showError) {
-            Text(
-                text = "Invalid seed phrase",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            showPasswordDialog = true
-        }) {
-            Text(text = "Import Wallet")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            navController.navigate("create_wallet")
-        }) {
-            Text(text = "Create Wallet")
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    showPasswordDialog = true
+                }) {
+                    Text(text = "Import Wallet")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    navController.navigate("create_wallet")
+                }) {
+                    Text(text = "Create Wallet")
+                }
+            }
         }
     }
 
@@ -123,28 +161,40 @@ fun ImportWallet(navController: NavController) {
             title = { Text("Set Password") },
             text = {
                 Column {
-                    TextField(
+                    CustomTextField(
                         value = inputPassword,
                         onValueChange = {
                             inputPassword = it
                             passwordMismatchError = false
                         },
-                        label = { Text("Password") },
+                        label = "password",
+                        placeholder = "Enter your password again",
+                        isPassword = true,
+                        passwordVisible = passwordVisible_1,
+                        onPasswordVisibilityChange = { passwordVisible_1 = !passwordVisible_1 },
+                        modifier = Modifier.fillMaxWidth(),
+                        shadowElevation = 8.dp,
                         visualTransformation = PasswordVisualTransformation(),
-                        isError = passwordError,
-                        modifier = Modifier.fillMaxWidth()
+                        isError = passwordMismatchError
                     )
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    TextField(
+
+                    CustomTextField(
                         value = confirmPassword,
                         onValueChange = {
                             confirmPassword = it
                             passwordMismatchError = false
                         },
-                        label = { Text("Confirm Password") },
+                        label = "Confirm Password",
+                        placeholder = "Enter your password again",
+                        isPassword = true,
+                        passwordVisible = passwordVisible_2,
+                        onPasswordVisibilityChange = { passwordVisible_2 = !passwordVisible_2 },
+                        modifier = Modifier.fillMaxWidth(),
+                        shadowElevation = 8.dp,
                         visualTransformation = PasswordVisualTransformation(),
-                        isError = passwordMismatchError,
-                        modifier = Modifier.fillMaxWidth()
+                        isError = passwordMismatchError
                     )
                     if (passwordMismatchError) {
                         Text(

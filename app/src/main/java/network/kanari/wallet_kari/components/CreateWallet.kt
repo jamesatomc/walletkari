@@ -2,12 +2,18 @@ package network.kanari.wallet_kari.components
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -16,6 +22,8 @@ import org.bitcoinj.crypto.MnemonicCode
 import java.security.SecureRandom
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.KeyboardType
+import network.kanari.wallet_kari.components.widget.CustomTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +35,8 @@ fun CreateWallet(navController: NavController) {
     var mnemonicLength by remember { mutableStateOf(12) }
     var expanded by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
+    var passwordMismatchError by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -37,25 +47,40 @@ fun CreateWallet(navController: NavController) {
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseOnSurface,),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                OutlinedTextField(
+                CustomTextField(
                     value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Enter Password") },
+                    onValueChange = {
+                        password = it
+                        passwordMismatchError = false
+                    },
+                    label = "Enter Password",
+                    placeholder = "Password",
+                    isPassword = true,
+                    passwordVisible = passwordVisible,
+                    onPasswordVisibilityChange = { passwordVisible = !passwordVisible },
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 8.dp,
                     visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
+                    isError = passwordMismatchError
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded }
                 ) {
-                    OutlinedTextField(
+                    TextField(
                         value = if (mnemonicLength == 12) "12 words" else "24 words",
                         onValueChange = {},
                         readOnly = true,
@@ -66,17 +91,32 @@ fun CreateWallet(navController: NavController) {
                         modifier = Modifier
                             .menuAnchor() // Ensure the dropdown menu is anchored to the text field
                             .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .border(
+                                BorderStroke(
+                                    color = Color.Transparent,
+                                    width = 1.dp
+                                ),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clip(RoundedCornerShape(10.dp))
+                            .shadow(elevation = 8.dp, shape = RoundedCornerShape(10.dp)),
+                        colors = ExposedDropdownMenuDefaults.textFieldColors(
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                        ),
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
+
                     ) {
                         DropdownMenuItem(
                             text = { Text("12 words") },
                             onClick = {
                                 mnemonicLength = 12
                                 expanded = false
-                            }
+                            },
                         )
                         DropdownMenuItem(
                             text = { Text("24 words") },
