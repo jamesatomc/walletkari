@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -27,6 +28,7 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -61,19 +64,28 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import network.kanari.wallet_kari.components.widget.AppDrawer
 import org.bitcoinj.core.Address
+import org.bitcoinj.core.Coin
+import org.bitcoinj.core.DumpedPrivateKey
 import org.bitcoinj.core.LegacyAddress
+import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.SegwitAddress
 import org.bitcoinj.crypto.ChildNumber
 import org.bitcoinj.crypto.DeterministicKey
 import org.bitcoinj.params.MainNetParams
+import org.bitcoinj.params.TestNet3Params
+
 import org.bitcoinj.script.Script
 import org.bitcoinj.script.ScriptBuilder
 import org.bitcoinj.wallet.DeterministicKeyChain
 import org.bitcoinj.wallet.DeterministicSeed
+import org.bitcoinj.wallet.SendRequest
+import org.bitcoinj.wallet.Wallet
 import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Scanner
+import org.bitcoinj.core.ECKey
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -88,8 +100,9 @@ fun HomeScreen(navController: NavHostController) {
     var recipientAddress by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var fee by remember { mutableStateOf("") }
-    val transactionResult by remember { mutableStateOf("") }
+    var transactionResult by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
+    var selectedFeeOption by remember { mutableStateOf("Low") }
 
     // Generate BTC addresses from the mnemonic
     val nativeSegwitAddress = try {
@@ -105,7 +118,7 @@ fun HomeScreen(navController: NavHostController) {
         "Error generating address"
     }
     val taprootAddress = try {
-        generateAddress(mnemonic, "P2TR")
+        generateP2TRAddress(mnemonic, "P2TR")
     } catch (e: Exception) {
         Log.e("HomeScreen", "Error generating taproot address", e)
         "Error generating address"
@@ -263,9 +276,19 @@ fun HomeScreen(navController: NavHostController) {
                     fee = fee,
                     onFeeChange = { fee = it },
                     feeOptions = listOf("Low", "Medium", "High"),
-                    selectedFeeOption = "Low",
-                    onSelectedFeeOptionChange = { /* Handle fee option change */ },
-                    transactionResult = transactionResult
+                    selectedFeeOption = selectedFeeOption,
+                    onSelectedFeeOptionChange = { selectedFeeOption = it },
+                    transactionResult = transactionResult,
+                    onSendClick = {
+                        val amountCoin = Coin.parseCoin(amount)
+                        val feePerKb = when (selectedFeeOption) {
+                            "Low" -> Coin.valueOf(1000)
+                            "Medium" -> Coin.valueOf(5000)
+                            "High" -> Coin.valueOf(10000)
+                            else -> Coin.valueOf(1000)
+                        }
+                        transactionResult = sendBitcoin(mnemonic, recipientAddress, amountCoin, feePerKb)
+                    }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -274,10 +297,9 @@ fun HomeScreen(navController: NavHostController) {
 }
 
 
-
 @SuppressLint("DefaultLocale")
 suspend fun fetchBalance(address: String): String {
-    val apiUrl = "https://api.blockcypher.com/v1/btc/main/addrs/$address/balance"
+    val apiUrl = "https://blockstream.info/testnet/api/address/$address"
     return try {
         val url = URL(apiUrl)
         val connection = withContext(Dispatchers.IO) {
@@ -292,34 +314,62 @@ suspend fun fetchBalance(address: String): String {
         if (responseCode != 200) {
             throw RuntimeException("HttpResponseCode: $responseCode")
         } else {
-            val scanner = Scanner(withContext(Dispatchers.IO) {
-                url.openStream()
-            })
+            val reader = BufferedReader(InputStreamReader(connection.inputStream))
             val response = StringBuilder()
-            while (scanner.hasNext()) {
-                response.append(scanner.nextLine())
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                response.append(line)
             }
-            scanner.close()
+            reader.close()
 
             val jsonResponse = JSONObject(response.toString())
-            val balance = jsonResponse.getLong("balance")
-            String.format("%.8f", balance / 1e8.toDouble()) // Convert sashimis to BTC and format to 8 decimal places
+            val chainStats = jsonResponse.getJSONObject("chain_stats")
+            val balance = chainStats.getLong("funded_txo_sum") - chainStats.getLong("spent_txo_sum")
+            String.format("%.8f", balance / 1e8.toDouble()) // Convert satoshis to BTC and format to 8 decimal places
         }
+    } catch (e: java.net.UnknownHostException) {
+        "Error: Unable to resolve host. Please check your internet connection."
+    } catch (e: java.net.SocketTimeoutException) {
+        "Error: Connection timed out. Please try again later."
+    } catch (e: java.io.IOException) {
+        "Error: Network error occurred. Please try again."
+    } catch (e: org.json.JSONException) {
+        "Error: Failed to parse response. Please try again."
     } catch (e: Exception) {
         e.printStackTrace()
-        "Error fetching balance"
+        "Error fetching balance: ${e.message}"
     }
 }
 
-fun generateAddress(mnemonic: String, addressType: String): String {
-    val params = MainNetParams.get()
+
+
+fun generateP2TRAddress(mnemonic: String, addressType: String): String {
+    val params = TestNet3Params.get()
     val seed = DeterministicSeed(mnemonic, null, "", 0L)
     val keyChain = DeterministicKeyChain.builder().seed(seed).build()
     val key: DeterministicKey = when (addressType) {
-        "P2WPKH" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(84, true), ChildNumber(0, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
-        "P2SH-P2WPKH" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(49, true), ChildNumber(0, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
-        "P2TR" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(86, true), ChildNumber(0, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
-        "P2PKH" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(44, true), ChildNumber(0, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
+        "P2TR" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(86, true), ChildNumber(1, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
+        else -> return "Invalid address type"
+    }
+
+    return when (addressType) {
+        "P2TR" -> {
+            val segwitKey = key.dropPrivateBytes().dropParent()
+            Address.fromKey(params, segwitKey, Script.ScriptType.P2TR).toString()
+        }
+        else -> "Invalid address type"
+    }
+
+}
+
+fun generateAddress(mnemonic: String, addressType: String): String {
+    val params = TestNet3Params.get()
+    val seed = DeterministicSeed(mnemonic, null, "", 0L)
+    val keyChain = DeterministicKeyChain.builder().seed(seed).build()
+    val key: DeterministicKey = when (addressType) {
+        "P2WPKH" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(84, true), ChildNumber(1, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
+        "P2SH-P2WPKH" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(49, true), ChildNumber(1, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
+        "P2PKH" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(44, true), ChildNumber(1, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
         else -> return "Invalid address type"
     }
 
@@ -333,16 +383,48 @@ fun generateAddress(mnemonic: String, addressType: String): String {
             val script = ScriptBuilder.createP2SHOutputScript(ScriptBuilder.createP2WPKHOutputScript(segwitKey))
             LegacyAddress.fromScriptHash(params, script.pubKeyHash).toString()
         }
-        "P2TR" -> {
-            val taprootKey = key.dropPrivateBytes().dropParent()
-            SegwitAddress.fromKey(params, taprootKey, Script.ScriptType.P2TR).toString()
-        }
         "P2PKH" -> {
             Address.fromKey(params, key, Script.ScriptType.P2PKH).toString()
         }
         else -> "Invalid address type"
     }
 }
+
+
+fun sendBitcoin(
+    mnemonic: String,
+    recipientAddress: String,
+    amount: Coin,
+    feePerKb: Coin
+): String {
+    return try {
+        val params = TestNet3Params.get()
+        val context = org.bitcoinj.core.Context(params)
+        org.bitcoinj.core.Context.propagate(context)
+
+        val seed = DeterministicSeed(mnemonic, null, "", 0L)
+        val keyChain = DeterministicKeyChain.builder().seed(seed).build()
+        val wallet = Wallet.createDeterministic(params, Script.ScriptType.P2WPKH)
+        wallet.addAndActivateHDChain(keyChain)
+
+        // Check wallet balance
+        val balance = wallet.balance
+        if (balance.isLessThan(amount.add(feePerKb))) {
+            return "Error sending Bitcoin: Insufficient funds. Available balance: ${balance.toFriendlyString()}"
+        }
+
+        val sendRequest = SendRequest.to(Address.fromString(params, recipientAddress), amount)
+        sendRequest.feePerKb = feePerKb
+        wallet.completeTx(sendRequest)
+        wallet.commitTx(sendRequest.tx)
+
+        sendRequest.tx.txId.toString()
+    } catch (e: Exception) {
+        e.printStackTrace()
+        "Error sending Bitcoin: ${e.message ?: "Unknown error"}"
+    }
+}
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -357,8 +439,11 @@ fun SendBitcoinSection(
     feeOptions: List<String>,
     selectedFeeOption: String,
     onSelectedFeeOptionChange: (String) -> Unit,
-    transactionResult: String
+    transactionResult: String,
+    onSendClick: () -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
+
     Text("Send Bitcoin", style = MaterialTheme.typography.bodySmall)
     Spacer(modifier = Modifier.height(8.dp))
     OutlinedTextField(
@@ -375,28 +460,38 @@ fun SendBitcoinSection(
         modifier = Modifier.fillMaxWidth()
     )
     Spacer(modifier = Modifier.height(8.dp))
-    ExposedDropdownMenuBox(
-        expanded = false,
-        onExpandedChange = { /* Handle expanded state */ }
-    ) {
-        OutlinedTextField(
-            value = selectedFeeOption,
-            onValueChange = onSelectedFeeOptionChange,
-            label = { Text("Fee") },
-            modifier = Modifier.fillMaxWidth(),
-            readOnly = true
-        )
-        ExposedDropdownMenu(
-            expanded = false,
-            onDismissRequest = { /* Handle dismiss */ }
-        ) {
-            feeOptions.forEach { feeOption ->
-                DropdownMenuItem(
-                    text = { Text(feeOption) },
-                    onClick = { onSelectedFeeOptionChange(feeOption) }
-                )
-            }
+ExposedDropdownMenuBox(
+    expanded = expanded,
+    onExpandedChange = { expanded = !expanded }
+) {
+    OutlinedTextField(
+        value = selectedFeeOption,
+        onValueChange = { onSelectedFeeOptionChange(it) },
+        label = { Text("Fee") },
+        modifier = Modifier.fillMaxWidth(),
+        readOnly = true,
+        trailingIcon = {
+            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
         }
+    )
+    ExposedDropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false }
+    ) {
+        feeOptions.forEach { feeOption ->
+            DropdownMenuItem(
+                text = { Text(feeOption) },
+                onClick = {
+                    onSelectedFeeOptionChange(feeOption)
+                    expanded = false
+                }
+            )
+        }
+    }
+}
+    Spacer(modifier = Modifier.height(16.dp))
+    Button(onClick = onSendClick) {
+        Text("Send")
     }
     Spacer(modifier = Modifier.height(16.dp))
     Text("Transaction Result: $transactionResult", style = MaterialTheme.typography.bodySmall)
