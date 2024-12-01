@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenuItem
@@ -47,8 +46,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -65,13 +62,9 @@ import kotlinx.coroutines.withContext
 import network.kanari.wallet_kari.components.widget.AppDrawer
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.Coin
-import org.bitcoinj.core.DumpedPrivateKey
 import org.bitcoinj.core.LegacyAddress
-import org.bitcoinj.core.NetworkParameters
-import org.bitcoinj.core.SegwitAddress
 import org.bitcoinj.crypto.ChildNumber
 import org.bitcoinj.crypto.DeterministicKey
-import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.params.TestNet3Params
 
 import org.bitcoinj.script.Script
@@ -85,7 +78,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
-import org.bitcoinj.core.ECKey
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -117,12 +110,6 @@ fun HomeScreen(navController: NavHostController) {
         Log.e("HomeScreen", "Error generating native Segwit P2SH address", e)
         "Error generating address"
     }
-    val taprootAddress = try {
-        generateP2TRAddress(mnemonic, "P2TR")
-    } catch (e: Exception) {
-        Log.e("HomeScreen", "Error generating taproot address", e)
-        "Error generating address"
-    }
     val legacyAddress = try {
         generateAddress(mnemonic, "P2PKH")
     } catch (e: Exception) {
@@ -139,7 +126,6 @@ fun HomeScreen(navController: NavHostController) {
     LaunchedEffect(Unit) {
         nativeSegwitBalance = withContext(Dispatchers.IO) { fetchBalance(nativeSegwitAddress) }
         nativeSegwitP2SHBalance = withContext(Dispatchers.IO) { fetchBalance(nativeSegwitP2SHAddress) }
-        taprootBalance = withContext(Dispatchers.IO) { fetchBalance(taprootAddress) }
         legacyBalance = withContext(Dispatchers.IO) { fetchBalance(legacyAddress) }
     }
 
@@ -221,25 +207,6 @@ fun HomeScreen(navController: NavHostController) {
                             )
                             Text(
                                 "Balance: $nativeSegwitP2SHBalance BTC",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                    Card(
-                        modifier = Modifier.padding(8.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Taproot (P2TR)", style = MaterialTheme.typography.bodyMedium)
-                            ClickableText(
-                                text = AnnotatedString("Address: $taprootAddress"),
-                                style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
-                                onClick = {
-                                    clipboardManager.setText(AnnotatedString(taprootAddress))
-                                }
-                            )
-                            Text(
-                                "Balance: $taprootBalance BTC",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -342,25 +309,6 @@ suspend fun fetchBalance(address: String): String {
 }
 
 
-
-fun generateP2TRAddress(mnemonic: String, addressType: String): String {
-    val params = TestNet3Params.get()
-    val seed = DeterministicSeed(mnemonic, null, "", 0L)
-    val keyChain = DeterministicKeyChain.builder().seed(seed).build()
-    val key: DeterministicKey = when (addressType) {
-        "P2TR" -> keyChain.getKeyByPath(ImmutableList.of(ChildNumber(86, true), ChildNumber(1, true), ChildNumber(0, true), ChildNumber(0, false), ChildNumber(0, false)), true)
-        else -> return "Invalid address type"
-    }
-
-    return when (addressType) {
-        "P2TR" -> {
-            val segwitKey = key.dropPrivateBytes().dropParent()
-            Address.fromKey(params, segwitKey, Script.ScriptType.P2TR).toString()
-        }
-        else -> "Invalid address type"
-    }
-
-}
 
 fun generateAddress(mnemonic: String, addressType: String): String {
     val params = TestNet3Params.get()
