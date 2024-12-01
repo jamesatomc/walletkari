@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -35,7 +36,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
 
         // Prevent screenshots
-//        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
 
         executor = ContextCompat.getMainExecutor(this)
         biometricPrompt = BiometricPrompt(this, executor,
@@ -56,13 +57,13 @@ class MainActivity : FragmentActivity() {
                 }
             })
 
-            promptInfo = BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Authenticate")
-                .setDeviceCredentialAllowed(true) // Allow password as an alternative
-                .build()
+        promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Authenticate")
+            .setDeviceCredentialAllowed(true) // Allow password as an alternative
+            .build()
 
         setContent {
-
+            WalletkariTheme {
                 val navController = rememberNavController()
                 if (isAuthenticated) {
                     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -99,6 +100,7 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
+    }
 
 
     override fun onResume() {

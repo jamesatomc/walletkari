@@ -69,6 +69,10 @@ dependencies {
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
 
+    implementation("com.google.zxing:core:3.4.1")
+
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)

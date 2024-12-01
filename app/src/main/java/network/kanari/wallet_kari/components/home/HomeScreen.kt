@@ -17,12 +17,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,16 +48,17 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import network.kanari.wallet_kari.components.widget.AppDrawer
+import network.kanari.wallet_kari.components.widget.BitcoinAddressCard
+import network.kanari.wallet_kari.startQrCodeScanner
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.Coin
 import org.bitcoinj.core.LegacyAddress
@@ -80,8 +79,9 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -161,81 +161,50 @@ fun HomeScreen(navController: NavHostController) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Center,
+                    .padding(6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Generated Bitcoin Addresses", style = MaterialTheme.typography.bodySmall)
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(70.dp))
 
-                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                Row(
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    val expanded = remember { mutableStateOf(false) }
 
-                    Card(
-                        modifier = Modifier.padding(8.dp),
-                        elevation = CardDefaults.cardElevation(4.dp),
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Native Segway (P2WPKH)", style = MaterialTheme.typography.bodyMedium)
-                            ClickableText(
-                                text = AnnotatedString("Address: $nativeSegwitAddress"),
-                                style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
-                                onClick = {
-                                    clipboardManager.setText(AnnotatedString(nativeSegwitAddress))
-                                }
-                            )
-                            Text(
-                                "Balance: $nativeSegwitBalance BTC",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                    Card(
-                        modifier = Modifier.padding(8.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Native Segwit (P2SH-P2WPKH)",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            ClickableText(
-                                text = AnnotatedString("Address: $nativeSegwitP2SHAddress"),
-                                style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
-                                onClick = {
-                                    clipboardManager.setText(AnnotatedString(nativeSegwitP2SHAddress))
-                                }
-                            )
-                            Text(
-                                "Balance: $nativeSegwitP2SHBalance BTC",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                    Card(
-                        modifier = Modifier.padding(8.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Legacy (P2PKH)", style = MaterialTheme.typography.bodyMedium)
-                            ClickableText(
-                                text = AnnotatedString("Address: $legacyAddress"),
-                                style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.Underline),
-                                onClick = {
-                                    clipboardManager.setText(AnnotatedString(legacyAddress))
-                                }
-                            )
-                            Text(
-                                "Balance: $legacyBalance BTC",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
+                    BitcoinAddressCard(
+                        title = "Native Segway (P2WPKH)",
+                        address = nativeSegwitAddress,
+                        balance = nativeSegwitBalance,
+                        expanded = expanded.value,
+                        onCardClick = { expanded.value = !expanded.value },
+                        onAddressClick = { clipboardManager.setText(AnnotatedString(nativeSegwitAddress)) }
+                    )
+
+                    BitcoinAddressCard(
+                        title = "Native Segwit (P2SH-P2WPKH)",
+                        address = nativeSegwitP2SHAddress,
+                        balance = nativeSegwitP2SHBalance,
+                        expanded = expanded.value,
+                        onCardClick = { expanded.value = !expanded.value },
+                        onAddressClick = { clipboardManager.setText(AnnotatedString(nativeSegwitP2SHAddress)) }
+                    )
+
+                    BitcoinAddressCard(
+                        title = "Legacy (P2PKH)",
+                        address = legacyAddress,
+                        balance = legacyBalance,
+                        expanded = expanded.value,
+                        onCardClick = { expanded.value = !expanded.value },
+                        onAddressClick = { clipboardManager.setText(AnnotatedString(legacyAddress)) }
+                    )
                 }
-
-
 
                 Spacer(modifier = Modifier.height(8.dp))
                 SendBitcoinSection(
+                    context = context,
                     recipientAddress = recipientAddress,
                     onRecipientAddressChange = { recipientAddress = it },
                     amount = amount,
@@ -262,6 +231,7 @@ fun HomeScreen(navController: NavHostController) {
         }
     }   // Drawer content
 }
+
 
 
 @SuppressLint("DefaultLocale")
@@ -378,6 +348,7 @@ fun sendBitcoin(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SendBitcoinSection(
+    context: Context,
     recipientAddress: String,
     onRecipientAddressChange: (String) -> Unit,
     amount: String,
@@ -398,7 +369,12 @@ fun SendBitcoinSection(
         value = recipientAddress,
         onValueChange = onRecipientAddressChange,
         label = { Text("Recipient Address") },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        trailingIcon = {
+            IconButton(onClick = { startQrCodeScanner(context) }) {
+                Icon(Icons.Default.CameraAlt, contentDescription = "Scan QR Code")
+            }
+        }
     )
     Spacer(modifier = Modifier.height(8.dp))
     OutlinedTextField(
@@ -408,35 +384,35 @@ fun SendBitcoinSection(
         modifier = Modifier.fillMaxWidth()
     )
     Spacer(modifier = Modifier.height(8.dp))
-ExposedDropdownMenuBox(
-    expanded = expanded,
-    onExpandedChange = { expanded = !expanded }
-) {
-    OutlinedTextField(
-        value = selectedFeeOption,
-        onValueChange = { onSelectedFeeOptionChange(it) },
-        label = { Text("Fee") },
-        modifier = Modifier.fillMaxWidth(),
-        readOnly = true,
-        trailingIcon = {
-            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-        }
-    )
-    ExposedDropdownMenu(
+    ExposedDropdownMenuBox(
         expanded = expanded,
-        onDismissRequest = { expanded = false }
+        onExpandedChange = { expanded = !expanded }
     ) {
-        feeOptions.forEach { feeOption ->
-            DropdownMenuItem(
-                text = { Text(feeOption) },
-                onClick = {
-                    onSelectedFeeOptionChange(feeOption)
-                    expanded = false
-                }
-            )
+        OutlinedTextField(
+            value = selectedFeeOption,
+            onValueChange = { onSelectedFeeOptionChange(it) },
+            label = { Text("Fee") },
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = true,
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            }
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            feeOptions.forEach { feeOption ->
+                DropdownMenuItem(
+                    text = { Text(feeOption) },
+                    onClick = {
+                        onSelectedFeeOptionChange(feeOption)
+                        expanded = false
+                    }
+                )
+            }
         }
     }
-}
     Spacer(modifier = Modifier.height(16.dp))
     Button(onClick = onSendClick) {
         Text("Send")
