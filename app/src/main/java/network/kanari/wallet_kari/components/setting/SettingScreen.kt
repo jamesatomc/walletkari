@@ -31,7 +31,10 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import android.content.ClipData
 import android.content.ClipboardManager
-
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.rememberDrawerState
+import network.kanari.wallet_kari.components.widget.AppDrawer
 
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -47,80 +50,97 @@ fun SettingScreen(navController: NavController) {
     var inputPassword by remember { mutableStateOf("") }
 
 
-   Scaffold {
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    var showDialog by remember { mutableStateOf(false) }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            AppDrawer(
+                navController = navController,
+                onLogoutClick = {
+                    showDialog = true
+                }
+            )
+        },
+    ) {
+        Scaffold {
 
 
-       Column(
-           modifier = Modifier
-               .fillMaxSize()
-               .padding(16.dp),
-           verticalArrangement = Arrangement.Center,
-           horizontalAlignment = Alignment.CenterHorizontally
-       ) {
-           Text(
-               text = "Seed Phrase",
-               style = MaterialTheme.typography.titleLarge,
-               modifier = Modifier.padding(bottom = 16.dp)
-           )
-            Button(
-                onClick = { showPasswordDialog = true },
-                modifier = Modifier.padding(top = 16.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = if (showSeedPhrase) mnemonic else "Click to view")
-            }
-
-       }
-   }
-
-
-
-if (showPasswordDialog) {
-    AlertDialog(
-        onDismissRequest = { showPasswordDialog = false },
-        title = { Text("Enter Password") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = inputPassword,
-                    onValueChange = { inputPassword = it },
-                    label = { Text("Password") },
-                    isError = passwordError,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    text = "Seed Phrase",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
-                if (passwordError) {
-                    Text(
-                        text = "Incorrect password",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                Button(
+                    onClick = { showPasswordDialog = true },
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Text(text = if (showSeedPhrase) mnemonic else "Click to view")
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                if (inputPassword == password) {
-                    showSeedPhrase = true
-                    showPasswordDialog = false
-                    // Copy seed phrase to clipboard
-                    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = ClipData.newPlainText("Seed Phrase", mnemonic)
-                    clipboardManager.setPrimaryClip(clip)
-                } else {
-                    passwordError = true
-                }
-            }) {
-                Text("Confirm")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { showPasswordDialog = false }) {
-                Text("Cancel")
+
             }
         }
-    )
-}
+    }
+
+
+
+
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false },
+            title = { Text("Enter Password") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = inputPassword,
+                        onValueChange = { inputPassword = it },
+                        label = { Text("Password") },
+                        isError = passwordError,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (passwordError) {
+                        Text(
+                            text = "Incorrect password",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (inputPassword == password) {
+                        showSeedPhrase = true
+                        showPasswordDialog = false
+                        // Copy seed phrase to clipboard
+                        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clip = ClipData.newPlainText("Seed Phrase", mnemonic)
+                        clipboardManager.setPrimaryClip(clip)
+                    } else {
+                        passwordError = true
+                    }
+                }) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPasswordDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Preview(showBackground = true)

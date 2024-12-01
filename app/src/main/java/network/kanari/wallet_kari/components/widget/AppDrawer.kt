@@ -25,12 +25,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
+import androidx.navigation.NavController
 
 
 @Composable
 fun AppDrawer(
-    navController: NavHostController,
+    navController: NavController,
     onLogoutClick: () -> Unit
 ) {
     val context = LocalContext.current

@@ -119,7 +119,6 @@ fun HomeScreen(navController: NavHostController) {
 
     var nativeSegwitBalance by remember { mutableStateOf("Loading...") }
     var nativeSegwitP2SHBalance by remember { mutableStateOf("Loading...") }
-    var taprootBalance by remember { mutableStateOf("Loading...") }
     var legacyBalance by remember { mutableStateOf("Loading...") }
 
 
