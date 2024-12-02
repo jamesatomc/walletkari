@@ -71,7 +71,7 @@ fun BitcoinAddressCard(
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        textDecoration = TextDecoration.Underline
+
                     ),
                     onClick = { onAddressClick() }
                 )
