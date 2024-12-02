@@ -23,7 +23,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentPasteSearch
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Wallet
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Card
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenuItem
@@ -33,6 +36,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -59,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
@@ -66,7 +71,7 @@ import kotlinx.coroutines.launch
 import network.kanari.wallet_kari.components.widget.AppDrawer
 import network.kanari.wallet_kari.components.widget.BitcoinAddressCard
 
-import org.bitcoinj.core.Coin
+
 
 
 
@@ -91,6 +96,7 @@ fun HomeScreen(navController: NavHostController) {
     val addressTypeOptions = listOf("P2WPKH", "P2SH-P2WPKH", "P2PKH")
     var selectedAddressType by remember { mutableStateOf(addressTypeOptions[0]) }
     var maxBalance by remember { mutableStateOf("0.0") }
+val mnemonicList = mnemonic.split(" ")
 
     // Generate BTC addresses from the mnemonic
     val nativeSegwitAddress = try {
@@ -210,6 +216,41 @@ fun HomeScreen(navController: NavHostController) {
                         }
                     }
                 )
+            },
+            bottomBar = {
+                Box(
+                    Modifier
+                        .padding(8.dp, 0.dp, 8.dp, 12.dp)
+                ) {
+                    BottomAppBar(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(66.dp)
+                            .clip(RoundedCornerShape(16.dp)), // Add rounded corners
+                    ) {
+                        NavigationBarItem(
+                            icon = {
+                                Icon(Icons.Default.Wallet, contentDescription = "account_balance_wallet")
+                            },
+                            onClick = { navController.navigate("home_screen") },
+                            selected = false,
+                        )
+                        NavigationBarItem(
+                            icon = {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            },
+                            onClick = { navController.navigate("home_screen") },
+                            selected = false,
+                        )
+                        NavigationBarItem(
+                            icon = {
+                                Icon(Icons.Default.ContentPasteSearch, contentDescription = "Contract")
+                            },
+                            onClick = { navController.navigate("transaction") },
+                            selected = false,
+                        )
+                    }
+                }
             }
         ) {
             Column(
@@ -279,21 +320,7 @@ fun HomeScreen(navController: NavHostController) {
                         onSelectedFeeOptionChange = { selectedFeeOption = it },
                         transactionResult = transactionResult,
                         onSendClick = {
-                            val amountCoin = Coin.parseCoin(amount)
-                            val feePerKb = when (selectedFeeOption) {
-                                "Low" -> Coin.valueOf(1000)
-                                "Medium" -> Coin.valueOf(5000)
-                                "High" -> Coin.valueOf(10000)
-                                else -> Coin.valueOf(1000)
-                            }
-                            transactionResult = sendBitcoin(
-                                mnemonic,
-                                recipientAddress,
-                                amountCoin,
-                                feePerKb,
-                                selectedNetwork,
-                                selectedAddressType
-                            )
+                            // Implement the send Bitcoin logic here
                         },
                         addressTypeOptions = addressTypeOptions,
                         selectedAddressType = selectedAddressType,
@@ -301,11 +328,12 @@ fun HomeScreen(navController: NavHostController) {
                         maxBalance = maxBalance
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(90.dp))
             }
         }
     }   // Drawer content
 }
+
 
 
 @Preview(showBackground = true)

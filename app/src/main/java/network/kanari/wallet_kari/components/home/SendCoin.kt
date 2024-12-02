@@ -32,9 +32,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import network.kanari.wallet_kari.startQrCodeScanner
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.Coin
+import org.bitcoinj.core.NetworkParameters
+import org.bitcoinj.core.Transaction
 import org.bitcoinj.kits.WalletAppKit
 import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.params.TestNet3Params
@@ -44,63 +47,12 @@ import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.wallet.SendRequest
 import org.bitcoinj.wallet.Wallet
 import java.io.File
+import org.bitcoinj.utils.BriefLogFormatter
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.Scanner
 
-fun sendBitcoin(
-    mnemonic: String,
-    recipientAddress: String,
-    amount: Coin,
-    feePerKb: Coin,
-    network: String,
-    addressType: String
-): String {
-    return try {
-        val params = when (network) {
-            "Mainnet" -> MainNetParams.get()
-            "Testnet3" -> TestNet3Params.get()
-            else -> throw IllegalArgumentException("Invalid network")
-        }
-        val context = org.bitcoinj.core.Context(params)
-        org.bitcoinj.core.Context.propagate(context)
-
-        val seed = DeterministicSeed(mnemonic, null, "", 0L)
-        val keyChain = DeterministicKeyChain.builder().seed(seed).build()
-        val scriptType = when (addressType) {
-            "P2WPKH" -> Script.ScriptType.P2WPKH
-            "P2SH-P2WPKH" -> Script.ScriptType.P2SH
-            "P2PKH" -> Script.ScriptType.P2PKH
-            else -> throw IllegalArgumentException("Invalid address type")
-        }
-        val wallet = Wallet.createDeterministic(params, scriptType)
-        wallet.addAndActivateHDChain(keyChain)
-
-        // Use WalletAppKit to manage the wallet and synchronize with the blockchain
-        val kit = WalletAppKit(params, File("."), "walletappkit")
-        kit.startAsync()
-        kit.awaitRunning()
-
-        // Check wallet balance
-        val balance = wallet.balance
-        if (balance.isLessThan(amount.add(feePerKb))) {
-            return "Error sending Bitcoin: Insufficient funds. Available balance: ${balance.toFriendlyString()}"
-        }
-
-        val sendRequest = SendRequest.to(Address.fromString(params, recipientAddress), amount)
-        sendRequest.feePerKb = feePerKb
-        wallet.completeTx(sendRequest)
-        wallet.commitTx(sendRequest.tx)
-
-        sendRequest.tx.txId.toString()
-    } catch (e: java.net.UnknownHostException) {
-        "Error: Unable to resolve host. Please check your internet connection."
-    } catch (e: java.net.SocketTimeoutException) {
-        "Error: Connection timed out. Please try again later."
-    } catch (e: java.io.IOException) {
-        "Error: Network error occurred. Please try again."
-    } catch (e: Exception) {
-        e.printStackTrace()
-        "Error sending Bitcoin: ${e.message ?: "Unknown error"}"
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -287,3 +239,83 @@ fun SendBitcoinSection(
         Text("Transaction Result: $transactionResult", style = MaterialTheme.typography.bodySmall)
     }
 }
+
+suspend fun fetchFeeRate(): Coin {
+    return withContext(Dispatchers.IO) {
+        val url = URL("https://blockstream.info/api/fee-estimates")
+        val connection = url.openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        connection.connect()
+
+        val scanner = Scanner(connection.inputStream)
+        val response = scanner.useDelimiter("\\A").next()
+        scanner.close()
+
+        val feeEstimates = JSONObject(response)
+        val fastestFee = feeEstimates.getDouble("1") // Fee rate for the next block
+        Coin.valueOf((fastestFee * 1000).toLong()) // Convert to satoshis per byte
+    }
+}
+
+suspend fun sendBitcoin(
+    wallet: Wallet,
+    recipientAddress: String,
+    amount: Coin,
+    networkParameters: NetworkParameters
+): String {
+    val feeRate = fetchFeeRate()
+    val tx = Transaction(networkParameters)
+    tx.addOutput(amount, Address.fromString(networkParameters, recipientAddress))
+
+    val sendRequest = SendRequest.forTx(tx)
+    sendRequest.feePerKb = feeRate
+
+    wallet.completeTx(sendRequest)
+    wallet.commitTx(sendRequest.tx)
+
+    return sendRequest.tx.txId.toString()
+}
+
+//fun sendBitcoin(
+//    mnemonic: List<String>,
+//    recipientAddress: String,
+//    amountCoin: Coin,
+//    feePerKb: Coin,
+//    selectedNetwork: String,
+//    selectedAddressType: String
+//): String {
+//    return try {
+//        val params: NetworkParameters = when (selectedNetwork) {
+//            "Mainnet" -> MainNetParams.get()
+//            "Testnet3" -> TestNet3Params.get()
+//            else -> throw IllegalArgumentException("Unsupported network: $selectedNetwork")
+//        }
+//
+//        // Set up logging
+//        BriefLogFormatter.init()
+//
+//        val walletDir = File(".", "wallet")
+//        if (!walletDir.exists()) {
+//            walletDir.mkdirs()
+//        }
+//
+//        val walletAppKit = WalletAppKit(params, walletDir, "wallet")
+//        walletAppKit.startAsync()
+//        walletAppKit.awaitRunning()
+//
+//        val seed = DeterministicSeed(mnemonic, null, "", 0)
+//        val wallet = Wallet.fromSeed(params, seed)
+//
+//        val sendRequest = SendRequest.to(Address.fromString(params, recipientAddress), amountCoin)
+//        sendRequest.feePerKb = feePerKb
+//
+//        val tx = wallet.sendCoins(sendRequest).tx
+//        walletAppKit.stopAsync()
+//        walletAppKit.awaitTerminated()
+//
+//        "Transaction successful: ${tx.txId}"
+//    } catch (e: Exception) {
+//        e.printStackTrace()
+//        "Transaction failed: ${e.message}"
+//    }
+//}

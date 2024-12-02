@@ -7,6 +7,7 @@ import org.bitcoinj.crypto.ChildNumber
 import org.bitcoinj.crypto.DeterministicKey
 import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.params.TestNet3Params
+import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.script.Script
 import org.bitcoinj.script.ScriptBuilder
 import org.bitcoinj.wallet.DeterministicKeyChain
@@ -16,7 +17,7 @@ fun generateAddress(mnemonic: String, addressType: String, network: String): Str
     val params = when (network) {
         "Mainnet" -> MainNetParams.get()
         "Testnet3" -> TestNet3Params.get()
-//        "Testnet4" -> TestNet4.get()
+        "Testnet4" -> RegTestParams.get()
         else -> throw IllegalArgumentException("Invalid network")
     }
     val seed = DeterministicSeed(mnemonic, null, "", 0L)
