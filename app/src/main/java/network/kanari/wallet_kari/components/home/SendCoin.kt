@@ -107,7 +107,7 @@ fun SendBitcoinSection(
                 focusedIndicatorColor = Color.Transparent,
             ),
             trailingIcon = {
-                IconButton(onClick = { startQrCodeScanner(context) }) {
+                IconButton(onClick = {  }) {
                     Icon(Icons.Default.CameraAlt, contentDescription = "Scan QR Code")
                 }
             }

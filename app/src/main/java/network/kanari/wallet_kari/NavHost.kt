@@ -10,7 +10,7 @@ import network.kanari.wallet_kari.components.home.HomeScreen
 import network.kanari.wallet_kari.components.ico.IcoScreen
 import network.kanari.wallet_kari.components.ImportWallet
 import network.kanari.wallet_kari.components.setting.SettingScreen
-import network.kanari.wallet_kari.components.transactions.TransactionScreen
+
 
 
 @Composable
@@ -43,6 +43,11 @@ fun AppNavHost(navController: NavHostController, context: Context) {
             IcoScreen(navController)
         }
     }
+}
+
+@Composable
+fun TransactionScreen(navController: NavHostController) {
+
 }
 
 
