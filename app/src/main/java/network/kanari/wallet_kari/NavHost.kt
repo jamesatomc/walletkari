@@ -30,9 +30,6 @@ fun AppNavHost(navController: NavHostController, context: Context) {
         composable("home_screen") {
             HomeScreen(navController)
         }
-        composable("transaction") {
-            TransactionScreen(navController)
-        }
         composable("import_wallet") {
             ImportWallet(navController)
         }
