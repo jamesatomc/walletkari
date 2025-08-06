@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -100,12 +99,8 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
-    }
-
-
-    override fun onResume() {
-        super.onResume()
-        isAuthenticated = false
-        biometricPrompt.authenticate(promptInfo)
+        if (!isAuthenticated) {
+            biometricPrompt.authenticate(promptInfo)
+        }
     }
 }

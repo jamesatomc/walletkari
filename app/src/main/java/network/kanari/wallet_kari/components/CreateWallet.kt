@@ -2,6 +2,7 @@ package network.kanari.wallet_kari.components
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.runtime.Composable
@@ -23,7 +24,10 @@ import java.security.SecureRandom
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import network.kanari.wallet_kari.components.widget.CustomTextField
+import network.kanari.wallet_kari.ui.theme.WalletkariTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +62,9 @@ fun CreateWallet(navController: NavController) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Text(text = "Create Wallet", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(16.dp))
+
                 CustomTextField(
                     value = password,
                     onValueChange = {
@@ -173,6 +180,18 @@ fun CreateWallet(navController: NavController) {
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES,showBackground = true)
+@Composable
+fun CreateWalletScreenPreview() {
+    WalletkariTheme{
+        CreateWallet(
+            navController = rememberNavController(),
+        )
     }
 }
 

@@ -91,7 +91,7 @@ fun HomeScreen(navController: NavHostController) {
     var transactionResult by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
     var selectedFeeOption by remember { mutableStateOf("Low") }
-    var selectedNetwork by remember { mutableStateOf(sharedPreferences.getString("selected_network", "Testnet3") ?: "Testnet3") }
+    var selectedNetwork by remember { mutableStateOf(sharedPreferences.getString("selected_network", "Mainnet") ?: "Mainnet") }
     var expanded by remember { mutableStateOf(false) }
     val addressTypeOptions = listOf("P2WPKH", "P2SH-P2WPKH", "P2PKH")
     var selectedAddressType by remember { mutableStateOf(addressTypeOptions[0]) }
