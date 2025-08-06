@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "network.kanari.wallet_kari"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "network.kanari.wallet_kari"
-        minSdk = 34
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 

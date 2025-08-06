@@ -32,7 +32,7 @@ import network.kanari.wallet_kari.R
 fun CustomTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: @Composable String,
+    label: String,
     placeholder: String,
     isPassword: Boolean = false,
     passwordVisible: Boolean = false,
